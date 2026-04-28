@@ -76,7 +76,9 @@ public class NestedComplexPropertyIA extends ImplicitAction {
             // we only push action data if NestComponentIA is applicable
         case AS_COMPLEX_PROPERTY_COLLECTION:
         case AS_COMPLEX_PROPERTY:
+            Class<?> expectedPropertyType = parentBean.getTypeForComplexProperty(nestedElementTagName, aggregationType);
             IADataForComplexProperty ad = new IADataForComplexProperty(parentBean, aggregationType, nestedElementTagName);
+            ad.setExpectedPropertyType(expectedPropertyType);
             actionDataStack.push(ad);
 
             return true;
@@ -118,7 +120,9 @@ public class NestedComplexPropertyIA extends ImplicitAction {
                 addInfo("Assuming default type [" + componentClass.getName() + "] for [" + localName + "] property");
             }
 
-            actionData.setNestedComplexProperty(componentClass.newInstance());
+            Class<?> expectedPropertyType = actionData.getExpectedPropertyType();
+            Object instance = OptionHelper.instantiateClassWithSuperclassRestriction(componentClass, expectedPropertyType);
+            actionData.setNestedComplexProperty(instance);
 
             // pass along the repository
             if (actionData.getNestedComplexProperty() instanceof ContextAware) {

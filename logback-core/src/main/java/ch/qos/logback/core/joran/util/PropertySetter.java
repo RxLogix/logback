@@ -377,6 +377,35 @@ public class PropertySetter extends ContextAwareBase {
 
     }
 
+    public Class<?> getTypeForComplexProperty(String nestedElementTagName, AggregationType aggregationType) {
+        Method aMethod = null;
+        switch (aggregationType) {
+        case AS_COMPLEX_PROPERTY:
+            aMethod = findSetterMethod(nestedElementTagName);
+            break;
+        case AS_COMPLEX_PROPERTY_COLLECTION:
+            aMethod = findAdderMethod(nestedElementTagName);
+            break;
+        default:
+            String msg = "Unexpected aggregationType [" + aggregationType + "] for property [" + nestedElementTagName + "].";
+            addError(msg);
+            throw new IllegalStateException(msg);
+        }
+
+        if (aMethod == null) {
+            String msg = "Could not find method for property [" + nestedElementTagName + "].";
+            addError(msg);
+            throw new IllegalStateException(msg);
+        }
+        Class<?>[] paramTypes = aMethod.getParameterTypes();
+        if (paramTypes.length != 1) {
+            String msg = "Expected [" + aMethod.getName() + "] for property [" + nestedElementTagName + "] to have exactly one parameter.";
+            addError(msg);
+            throw new IllegalStateException(msg);
+        }
+        return paramTypes[0];
+    }
+
     public Class<?> getClassNameViaImplicitRules(String name, AggregationType aggregationType, DefaultNestedComponentRegistry registry) {
 
         Class<?> registryResult = registry.findDefaultComponentType(obj.getClass(), name);

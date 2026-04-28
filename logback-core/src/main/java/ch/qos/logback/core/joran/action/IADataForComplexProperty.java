@@ -26,6 +26,7 @@ public class IADataForComplexProperty {
     final AggregationType aggregationType;
     final String complexPropertyName;
     private Object nestedComplexProperty;
+    private Class<?> expectedPropertyType;
     boolean inError;
 
     public IADataForComplexProperty(PropertySetter parentBean, AggregationType aggregationType, String complexPropertyName) {
@@ -48,6 +49,14 @@ public class IADataForComplexProperty {
 
     public void setNestedComplexProperty(Object nestedComplexProperty) {
         this.nestedComplexProperty = nestedComplexProperty;
+    }
+
+    public Class<?> getExpectedPropertyType() {
+        return expectedPropertyType;
+    }
+
+    public void setExpectedPropertyType(Class<?> expectedPropertyType) {
+        this.expectedPropertyType = expectedPropertyType;
     }
 
 }
