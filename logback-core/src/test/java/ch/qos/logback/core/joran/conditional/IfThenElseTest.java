@@ -30,6 +30,7 @@ import ch.qos.logback.core.joran.action.Action;
 import ch.qos.logback.core.joran.action.NOPAction;
 import ch.qos.logback.core.joran.action.ext.StackAction;
 import ch.qos.logback.core.joran.spi.JoranException;
+import ch.qos.logback.core.status.Status;
 import ch.qos.logback.core.status.StatusChecker;
 import ch.qos.logback.core.testUtil.RandomUtil;
 import ch.qos.logback.core.util.CoreTestConstants;
@@ -105,6 +106,15 @@ public class IfThenElseTest {
         tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifWithoutElse.xml");
         verifyConfig(new String[] { "BEGIN", "END" });
         assertTrue(checker.isErrorFree(0));
+    }
+    
+    @Test
+    public void ifWithNew() throws JoranException {
+        context.putProperty(ki1, val1);
+        tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifNew.xml");
+        checker.containsMatch(Status.ERROR, IfAction.NEW_OPERATOR_DISALLOWED_MSG);
+        checker.containsMatch(Status.ERROR, IfAction.NEW_OPERATOR_DISALLOWED_SEE);
+        verifyConfig(new String[] { "BEGIN", "END" });
     }
 
     @Test

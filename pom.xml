@@ -7,7 +7,7 @@
 
   <groupId>ch.qos.logback</groupId>
   <artifactId>logback-parent</artifactId>
-  <version>1.2.13-rx1</version>
+  <version>1.2.13-rx2</version>
   <packaging>pom</packaging>
 
   <name>Logback-Parent</name>
@@ -423,7 +423,7 @@
     <repository>
 		<id>RXLOGIX-thirdparty</id>
         <name>RXLogix Thirdparty Repository</name>
-        <url>http://10.100.3.6:8080/nexus/content/repositories/common-component-snapshots/</url>
+        <url>http://10.100.21.16:8080/repository/common-component-snapshots/</url>
 	</repository>
 
   </distributionManagement>
