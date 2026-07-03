@@ -61,6 +61,24 @@ public class HardenedObjectInputStreamTest {
     }
 
     @Test
+    public void rejectsPackagePrefixClassNotExplicitlyWhitelisted() throws IOException, ClassNotFoundException {
+        // CVE-2026-9828: java.util.HashSet was previously admitted by the "java.util"
+        // package-prefix allowlist. With the exact-match JAVA_CLASSES allowlist it must now
+        // be rejected, since it is not individually whitelisted.
+        writeObject(oos, new HashSet<String>());
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new HardenedObjectInputStream(bis, whitelist);
+        try {
+            inputStream.readObject();
+            fail("InvalidClassException expected");
+        } catch (InvalidClassException e) {
+            // expected
+        } finally {
+            inputStream.close();
+        }
+    }
+
+    @Test
     public void denialOfService() throws ClassNotFoundException, IOException {
 
         if(!EnvUtil.isJDK9OrHigher()) {
