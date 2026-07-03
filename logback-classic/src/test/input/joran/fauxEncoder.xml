@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE configuration>
+
+<configuration debug="false">
+    <appender name="CON" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder class="ch.qos.logback.classic.joran.FauxEncoder"/>
+    </appender>
+    <root level="DEBUG">
+        <appender-ref ref="CON"/>
+    </root>
+</configuration>

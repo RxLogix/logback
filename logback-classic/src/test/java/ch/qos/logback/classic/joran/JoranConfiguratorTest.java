@@ -145,6 +145,15 @@ public class JoranConfiguratorTest {
     }
 
     @Test
+    public void fauxEncoder_CVE_2026_1225() throws JoranException {
+        FauxEncoder.COUNT = 0;
+        configure(ClassicTestConstants.JORAN_INPUT_PREFIX + "fauxEncoder.xml");
+        assertEquals(0, FauxEncoder.COUNT);
+        checker.assertContainsMatch(Status.ERROR,
+                "Could not create component \\[encoder\\] of type \\[ch.qos.logback.classic.joran.FauxEncoder\\]");
+    }
+
+    @Test
     public void contextRename() throws JoranException {
         loggerContext.setName(CoreConstants.DEFAULT_CONTEXT_NAME);
         configure(ClassicTestConstants.JORAN_INPUT_PREFIX + "contextRename.xml");
