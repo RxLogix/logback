@@ -33,8 +33,11 @@ public class IfAction extends Action {
     public static final String MISSING_JANINO_MSG = "Could not find Janino library on the class path. Skipping conditional processing.";
     public static final String MISSING_JANINO_SEE = "See also " + CoreConstants.CODES_URL + "#ifJanino";
     
-    public static final String NEW_OPERATOR_DISALLOWED_MSG = "The 'condition' attribute may not contain the 'new' operator.";
-    public static final String NEW_OPERATOR_DISALLOWED_SEE = "See also " + CoreConstants.CODES_URL + "#conditionNew";
+    public static final String BLACKLISTED_REF_DISALLOWED_MSG = "The 'condition' attribute may not contain blacklisted references.";
+    public static final String BLACKLISTED_REF_DISALLOWED_SEE = "See also " + CoreConstants.CODES_URL + "#conditionBlacklisted";
+
+    public static final String UNICODE_DISALLOWED_MSG = "The 'condition' attribute may not contain unicode escape characters.";
+    public static final String UNICODE_DISALLOWED_SEE = "See also " + CoreConstants.CODES_URL + "#conditionUnicode";
 
 
     Stack<IfState> stack = new Stack<IfState>();
@@ -62,15 +65,25 @@ public class IfAction extends Action {
         String conditionAttribute = attributes.getValue(CONDITION_ATTR);
 
         if (!OptionHelper.isEmpty(conditionAttribute)) {
-        	
-        	 // do not allow 'new' operator
-            if(hasNew(conditionAttribute)) {
-                addError(NEW_OPERATOR_DISALLOWED_MSG);
-                addError(NEW_OPERATOR_DISALLOWED_SEE);
+
+            conditionAttribute = OptionHelper.substVars(conditionAttribute, ic, context);
+
+            // CVE-2026-13006: do not allow unicode escape sequences, which Janino would
+            // decode and could be used to smuggle blacklisted keywords past the check below.
+            if (OptionHelper.containsUnicodeEscape(conditionAttribute)) {
+                addError(UNICODE_DISALLOWED_MSG);
+                addError(UNICODE_DISALLOWED_SEE);
                 return;
             }
-        	
-            conditionAttribute = OptionHelper.substVars(conditionAttribute, ic, context);
+
+            // CVE-2026-13006: do not allow blacklisted references (e.g. 'new', 'Runtime',
+            // 'springframework') in the condition expression.
+            if (hasBlacklistedReferences(conditionAttribute)) {
+                addError(BLACKLISTED_REF_DISALLOWED_MSG);
+                addError(BLACKLISTED_REF_DISALLOWED_SEE);
+                return;
+            }
+
             PropertyEvalScriptBuilder pesb = new PropertyEvalScriptBuilder(ic);
             pesb.setContext(context);
             try {
@@ -153,8 +166,15 @@ public class IfAction extends Action {
         return stack.peek().active;
     }
     
-    private boolean hasNew(String conditionStr) {
-        return conditionStr.contains("new ");
+    static final String[] BLACKLISTED_REFERENCES_IN_CONDITIONAL = new String[] { "new ", "Runtime", "springframework" };
+
+    static boolean hasBlacklistedReferences(String conditionStr) {
+        for (String fishyReference : BLACKLISTED_REFERENCES_IN_CONDITIONAL) {
+            if (conditionStr.contains(fishyReference)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
 
