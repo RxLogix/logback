@@ -23,6 +23,7 @@ import java.io.ObjectStreamClass;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -123,6 +124,16 @@ public class HardenedObjectInputStream extends ObjectInputStream {
         }
 
         return super.resolveClass(anObjectStreamClass);
+    }
+
+    /**
+     * There is no reason to have proxy classes in logback deserialization, so we just
+     * throw an exception here to prevent any potential bypasses that could be achieved
+     * through proxy classes (CVE-2026-9828). Ported from upstream commit f7a0654c.
+     */
+    @Override
+    protected Class<?> resolveProxyClass(String[] interfaces) throws IOException, ClassNotFoundException {
+        throw new InvalidClassException("Unauthorized deserialization attempt ", Arrays.toString(interfaces));
     }
 
     private boolean isWhitelisted(String incomingClassName) {
