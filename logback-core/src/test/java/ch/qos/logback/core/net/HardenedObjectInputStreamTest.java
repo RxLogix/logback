@@ -8,6 +8,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -58,6 +62,51 @@ public class HardenedObjectInputStreamTest {
         oos.writeObject(o);
         oos.flush();
         oos.close();
+    }
+
+    @Test
+    public void rejectsPackagePrefixClassNotExplicitlyWhitelisted() throws IOException, ClassNotFoundException {
+        // CVE-2026-9828: java.util.HashSet was previously admitted by the "java.util"
+        // package-prefix allowlist. With the exact-match JAVA_CLASSES allowlist it must now
+        // be rejected, since it is not individually whitelisted.
+        writeObject(oos, new HashSet<String>());
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new HardenedObjectInputStream(bis, whitelist);
+        try {
+            inputStream.readObject();
+            fail("InvalidClassException expected");
+        } catch (InvalidClassException e) {
+            // expected
+        } finally {
+            inputStream.close();
+        }
+    }
+
+    @Test
+    public void rejectsProxyClass() throws IOException, ClassNotFoundException {
+        // CVE-2026-9828: proxy classes are never deserialized, to prevent an allowlist
+        // bypass via a dynamic proxy implementing a whitelisted interface.
+        Runnable proxy = (Runnable) Proxy.newProxyInstance(getClass().getClassLoader(),
+                new Class[] { Runnable.class }, new NoOpSerializableHandler());
+        writeObject(oos, proxy);
+        ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
+        inputStream = new HardenedObjectInputStream(bis, whitelist);
+        try {
+            inputStream.readObject();
+            fail("InvalidClassException expected");
+        } catch (InvalidClassException e) {
+            // expected
+        } finally {
+            inputStream.close();
+        }
+    }
+
+    static class NoOpSerializableHandler implements InvocationHandler, Serializable {
+        private static final long serialVersionUID = 1L;
+
+        public Object invoke(Object proxy, Method method, Object[] args) {
+            return null;
+        }
     }
 
     @Test

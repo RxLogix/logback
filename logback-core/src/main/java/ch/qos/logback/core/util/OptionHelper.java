@@ -127,6 +127,16 @@ public class OptionHelper {
         }
     }
 
+    /**
+     * Returns true if the value contains a Java unicode escape sequence (\\u or \\U).
+     * Such sequences can be used to smuggle otherwise disallowed keywords past
+     * denylist checks, since Janino decodes them before evaluation (CVE-2026-13006).
+     * Ported from upstream commit 347efc8e.
+     */
+    public static boolean containsUnicodeEscape(String value) {
+        return value.contains("\\u") || value.contains("\\U");
+    }
+
     public static String propertyLookup(String key, PropertyContainer pc1, PropertyContainer pc2) {
         String value = null;
         // first try the props passed as parameter

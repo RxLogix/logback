@@ -23,22 +23,44 @@ import java.io.ObjectStreamClass;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /**
- * HardenedObjectInputStream restricts the set of classes that can be deserialized to a set of 
+ * HardenedObjectInputStream restricts the set of classes that can be deserialized to a set of
  * explicitly whitelisted classes. This prevents certain type of attacks from being successful.
- * 
- * <p>It is assumed that classes in the "java.lang" and  "java.util" packages are 
- * always authorized.</p>
- * 
+ *
+ * <p>A small set of individually enumerated classes from the "java.lang" and "java.util"
+ * packages are authorized. Prior versions authorized any class whose name started with
+ * "java.lang" or "java.util", which admitted dangerous classes such as
+ * java.lang.ProcessBuilder (CVE-2026-9828). Authorization is now performed by exact class
+ * name match.</p>
+ *
  * @author Ceki G&uuml;lc&uuml;
  * @since 1.2.0
  */
 public class HardenedObjectInputStream extends ObjectInputStream {
 
     final List<String> whitelistedClassNames;
-    final static String[] JAVA_PACKAGES = new String[] { "java.lang", "java.util" };
+    // CVE-2026-9828: classes in java.lang and java.util are whitelisted individually
+    // (exact match) rather than by package prefix. Ported from upstream commit 12cf2c5a.
+    final static String[] JAVA_CLASSES = new String[] { "java.lang.Boolean",
+            "java.lang.Byte",
+            "java.lang.Character",
+            "java.lang.Double",
+            "java.lang.Float",
+            "java.lang.Integer",
+            "java.lang.Long",
+            "java.lang.Number",
+            "java.lang.Short",
+            "java.lang.String",
+            "java.lang.Throwable",
+            "java.util.ArrayList",
+            "java.util.Collections$EmptyMap",
+            "java.util.Collections$UnmodifiableMap",
+            "java.util.concurrent.CopyOnWriteArrayList",
+            "java.util.HashMap"
+    };
     final private static int DEPTH_LIMIT = 16;
     final private static int ARRAY_LIMIT = 10000;
 
@@ -104,9 +126,19 @@ public class HardenedObjectInputStream extends ObjectInputStream {
         return super.resolveClass(anObjectStreamClass);
     }
 
+    /**
+     * There is no reason to have proxy classes in logback deserialization, so we just
+     * throw an exception here to prevent any potential bypasses that could be achieved
+     * through proxy classes (CVE-2026-9828). Ported from upstream commit f7a0654c.
+     */
+    @Override
+    protected Class<?> resolveProxyClass(String[] interfaces) throws IOException, ClassNotFoundException {
+        throw new InvalidClassException("Unauthorized deserialization attempt ", Arrays.toString(interfaces));
+    }
+
     private boolean isWhitelisted(String incomingClassName) {
-        for (int i = 0; i < JAVA_PACKAGES.length; i++) {
-            if (incomingClassName.startsWith(JAVA_PACKAGES[i]))
+        for (String javaClass : JAVA_CLASSES) {
+            if (incomingClassName.equals(javaClass))
                 return true;
         }
         for (String whiteListed : whitelistedClassNames) {

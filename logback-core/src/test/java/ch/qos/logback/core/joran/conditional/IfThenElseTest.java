@@ -112,8 +112,38 @@ public class IfThenElseTest {
     public void ifWithNew() throws JoranException {
         context.putProperty(ki1, val1);
         tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifNew.xml");
-        checker.containsMatch(Status.ERROR, IfAction.NEW_OPERATOR_DISALLOWED_MSG);
-        checker.containsMatch(Status.ERROR, IfAction.NEW_OPERATOR_DISALLOWED_SEE);
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_MSG));
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_SEE));
+        verifyConfig(new String[] { "BEGIN", "END" });
+    }
+
+    // CVE-2026-13006: 'new' smuggled via a unicode escape sequence must be rejected.
+    @Test
+    public void ifWithNewSlashU() throws JoranException {
+        context.putProperty(ki1, val1);
+        tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifNewSlashU.xml");
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.UNICODE_DISALLOWED_MSG));
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.UNICODE_DISALLOWED_SEE));
+        verifyConfig(new String[] { "BEGIN", "END" });
+    }
+
+    // CVE-2026-13006: a reference to Runtime must be rejected.
+    @Test
+    public void ifWithRuntime() throws JoranException {
+        context.putProperty(ki1, val1);
+        tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifRuntime.xml");
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_MSG));
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_SEE));
+        verifyConfig(new String[] { "BEGIN", "END" });
+    }
+
+    // CVE-2026-13006: a reference to springframework must be rejected.
+    @Test
+    public void ifWithSpringframework() throws JoranException {
+        context.putProperty(ki1, val1);
+        tc.doConfigure(CONDITIONAL_DIR_PREFIX + "ifSpringframework.xml");
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_MSG));
+        assertTrue(checker.containsMatch(Status.ERROR, IfAction.BLACKLISTED_REF_DISALLOWED_SEE));
         verifyConfig(new String[] { "BEGIN", "END" });
     }
 

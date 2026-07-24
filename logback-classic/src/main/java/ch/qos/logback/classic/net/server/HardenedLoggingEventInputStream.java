@@ -41,6 +41,11 @@ public class HardenedLoggingEventInputStream extends HardenedObjectInputStream {
         whitelist.add(StackTraceElementProxy.class.getName());
         whitelist.add(StackTraceElementProxy[].class.getName());
         whitelist.add(ClassPackagingData.class.getName());
+        // CVE-2026-9828: the core allowlist now matches java.util/java.lang classes by exact
+        // name rather than package prefix. LogbackMDCAdapter stores the MDC map as a
+        // Collections.synchronizedMap(...), so a serialized logging event's mdcPropertyMap
+        // may be a java.util.Collections$SynchronizedMap; authorize it explicitly here.
+        whitelist.add("java.util.Collections$SynchronizedMap");
 
         return whitelist;
     }
